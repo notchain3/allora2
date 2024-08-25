@@ -1,4 +1,6 @@
 #!/bin/bash
+# bash <(curl -s https://raw.githubusercontent.com/notchain3/allora2/main/allora2.sh)
+
 echo "Пожалуйста, введите сид-фразу для кошелька, используемого в работе."
 read -s SEED_PHRASE  # Добавляем -s для скрытия ввода
 
