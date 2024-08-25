@@ -1,11 +1,9 @@
 #!/bin/bash
-# bash <(curl -s https://raw.githubusercontent.com/notchain3/allora2/main/allora2.sh)
-
 echo "Пожалуйста, введите сид-фразу для кошелька, используемого в работе."
 read -s SEED_PHRASE  # Добавляем -s для скрытия ввода
 
-echo "Введите URL RPC сервера:"
-read -p "RPC URL: " RPC_URL
+# Новый RPC URL
+RPC_URL="https://allora-rpc.testnet-1.testnet.allora.network/"
 
 WORK_DIR="$HOME/allora-workers"
 mkdir -p $WORK_DIR && cd $WORK_DIR
