@@ -1,51 +1,38 @@
 #!/bin/bash
-# bash <(curl -s https://raw.githubusercontent.com/RomanTsibii/nodes/main/allora/nodium/install_workers.sh)
+echo "Пожалуйста, введите сид-фразу для кошелька, используемого в работе."
+read -s SEED_PHRASE  # Добавляем -s для скрытия ввода
 
-echo "Введите сид фразу от кошелька, который будет использоваться для воркера"
-read WALLET_SEED_PHRASE
-echo "Введите RPC"
-read RPC
+echo "Введите URL RPC сервера:"
+read -p "RPC URL: " RPC_URL
 
-cd $HOME
-docker compose -f $HOME/allora-huggingface-walkthrough/docker-compose.yaml down -v
+WORK_DIR="$HOME/allora-workers"
+mkdir -p $WORK_DIR && cd $WORK_DIR
+
+echo "Останавливаем и удаляем существующие контейнеры..."
+docker compose -f $WORK_DIR/allora-huggingface-walkthrough/docker-compose.yaml down -v
+
+echo "Удаляем старые данные..."
 rm -rf basic-coin-prediction-node
 
-echo "------------- install 1 worker -------------"
-git clone https://github.com/nhunamit/basic-coin-prediction-node.git
-mv basic-coin-prediction-node worker1-10m
-cd worker1-10m
-git checkout worker1-10m
-sed -i "/\"nodeRpc\"/ s|\"nodeRpc\": \".*\"|\"nodeRpc\": \"$RPC\"|" config.json
-sed -i "s|just clap slim ...|$WALLET_SEED_PHRASE|" config.json
-./init.config
-docker compose build
-docker compose up -d
-cd ..
+WORKER_VERSIONS=("worker1-10m" "worker2-24h" "worker3-20m")
+REPO_URL="https://github.com/nhunamit/basic-coin-prediction-node.git"
 
-echo "------------- install 2 worker -------------"
-git clone https://github.com/nhunamit/basic-coin-prediction-node.git
-mv basic-coin-prediction-node worker2-24h
-cd worker2-24h
-git checkout worker2-24h
-sed -i "/\"nodeRpc\"/ s|\"nodeRpc\": \".*\"|\"nodeRpc\": \"$RPC\"|" config.json
-sed -i "s|just clap slim ...|$WALLET_SEED_PHRASE|" config.json
-./init.config
-docker compose build
-docker compose up -d
-cd ..
+for VERSION in "${WORKER_VERSIONS[@]}"; do
+    echo "------------- Установка $VERSION -------------"
+    git clone $REPO_URL
+    mv basic-coin-prediction-node $VERSION
+    cd $VERSION
+    git checkout $VERSION
+    sed -i "/\"nodeRpc\"/ s|\"nodeRpc\": \".*\"|\"nodeRpc\": \"$RPC_URL\"|" config.json
+    sed -i "s|just clap slim ...|$SEED_PHRASE|" config.json
+    ./init.config
+    docker compose build
+    docker compose up -d
+    cd ..
+done
 
-echo "------------- install 3 worker -------------"
-git clone https://github.com/nhunamit/basic-coin-prediction-node.git
-mv basic-coin-prediction-node worker3-20m
-cd worker3-20m
-git checkout worker3-20m
-sed -i "/\"nodeRpc\"/ s|\"nodeRpc\": \".*\"|\"nodeRpc\": \"$RPC\"|" config.json
-sed -i "s|just clap slim ...|$WALLET_SEED_PHRASE|" config.json
-./init.config
-docker compose build
-docker compose up -d
-cd ..
-
-echo "docker compose -f $HOME/worker1-10m/docker-compose.yml logs -f -n 10"
-echo "docker compose -f $HOME/worker2-24h/docker-compose.yml logs -f -n 10"
-echo "docker compose -f $HOME/worker3-20m/docker-compose.yml logs -f -n 10"
+echo "Все воркеры установлены. Логи:"
+for VERSION in "${WORKER_VERSIONS[@]}"; do
+    echo "Логи для $VERSION:"
+    docker compose -f $WORK_DIR/$VERSION/docker-compose.yml logs -f -n 10
+done
